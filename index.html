@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product CRUD Application</title>
     <header>
-        <h1>Product CRUD Application</h1>
+        <h1>Inventory </h1>
     </header>
     <style>
+        
         body {
             font-family: Arial, sans-serif;
             background-color: #333;
@@ -19,7 +20,7 @@
             margin-bottom: 20px;
         }
 
-        .product-form input, .product-form button {
+        .product-form input, .product-form button, #search {
             margin: 5px;
             padding: 10px;
         }
@@ -43,14 +44,24 @@
             background-color: #666;
         }
 
-        .edit-button {
+        .edit-button, .delete-button {
             color: #4CAF50;
             cursor: pointer;
         }
 
         .delete-button {
             color: #f44336;
-            cursor: pointer;
+        }
+        @media screen and (max-width: 600px) {
+            .product-table {
+                width: 100%;
+                display: block;
+                overflow-x: auto;
+            }
+
+            .product-table th, .product-table td {
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
@@ -60,9 +71,11 @@
         <input type="text" id="name" placeholder="Product Name">
         <input type="text" id="description" placeholder="Product Description">
         <input type="number" id="price" placeholder="Product Price">
+        <input type="number" id="quantity" placeholder="Quantity" value="1">
         <button onclick="saveProduct()">Save Product</button>
     </div>
 
+    <input type="text" id="search" placeholder="Search Products" onkeyup="searchProducts()">
     <button onclick="deleteSelected()">Delete Selected</button>
     <div id="product-list"></div>
 
@@ -70,15 +83,18 @@
         let products = JSON.parse(localStorage.getItem('products') || '[]');
         const productListEl = document.getElementById('product-list');
 
-        function displayProducts() {
-            let html = '<table class="product-table"><tr><th>Select</th><th>Name</th><th>Description</th><th>Price</th><th>Edit</th></tr>';
-            products.forEach(product => {
+        function displayProducts(filteredProducts = null) {
+            const displayProducts = filteredProducts || products;
+            let html = '<table class="product-table"><tr><th>Select</th><th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Quantity</th><th>Edit</th></tr>';
+            displayProducts.forEach(product => {
                 html += `
                     <tr class="product-item">
                         <td><input type="checkbox" class="delete-checkbox" value="${product.id}"></td>
+                        <td>${product.id}</td>
                         <td>${product.name}</td>
                         <td>${product.description}</td>
-                        <td>$${product.price}</td>
+                        <td>${formatPrice(product.price)}</td>
+                        <td>${product.quantity}</td>
                         <td><span class="edit-button" onclick="editProduct('${product.id}')">Edit</span></td>
                     </tr>
                 `;
@@ -87,18 +103,31 @@
             productListEl.innerHTML = html;
         }
 
+        function formatPrice(price) {
+            return Number(price).toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+        }
+
         function saveProduct() {
             const id = document.getElementById('editing-id').value;
             const name = document.getElementById('name').value;
             const description = document.getElementById('description').value;
             const price = document.getElementById('price').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
 
             if (id) {
                 const index = products.findIndex(p => p.id === id);
-                products[index] = { id, name, description, price };
+                products[index] = { ...products[index], name, description, price, quantity };
             } else {
-                const newProduct = { id: Date.now().toString(), name, description, price };
-                products.push(newProduct);
+                let existingProduct = products.find(p => p.name === name && p.description === description && p.price === price);
+                if (existingProduct) {
+                    existingProduct.quantity += quantity;
+                } else {
+                    const newProduct = { id: Date.now().toString(), name, description, price, quantity };
+                    products.push(newProduct);
+                }
             }
 
             localStorage.setItem('products', JSON.stringify(products));
@@ -112,6 +141,7 @@
             document.getElementById('name').value = product.name;
             document.getElementById('description').value = product.description;
             document.getElementById('price').value = product.price;
+            document.getElementById('quantity').value = product.quantity;
         }
 
         function deleteSelected() {
@@ -121,11 +151,20 @@
             displayProducts();
         }
 
+        function searchProducts() {
+            const searchQuery = document.getElementById('search').value;
+            const filteredProducts = products.filter(product => 
+                product.name.includes(searchQuery)
+            );
+            displayProducts(filteredProducts);
+        }
+
         function clearForm() {
             document.getElementById('editing-id').value = '';
             document.getElementById('name').value = '';
             document.getElementById('description').value = '';
             document.getElementById('price').value = '';
+            document.getElementById('quantity').value = '1';
         }
 
         displayProducts();
