@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product CRUD Application</title>
+    <header>
+        <h1>Product CRUD Application</h1>
+    </header>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+        }
+
+        .product-form {
+            margin-bottom: 20px;
+        }
+
+        .product-form input, .product-form button {
+            margin: 5px;
+            padding: 10px;
+        }
+
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .product-table th, .product-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .product-table th {
+            background-color: #555;
+        }
+
+        .product-item:hover {
+            background-color: #666;
+        }
+
+        .edit-button {
+            color: #4CAF50;
+            cursor: pointer;
+        }
+
+        .delete-button {
+            color: #f44336;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="product-form">
+        <input type="hidden" id="editing-id">
+        <input type="text" id="name" placeholder="Product Name">
+        <input type="text" id="description" placeholder="Product Description">
+        <input type="number" id="price" placeholder="Product Price">
+        <button onclick="saveProduct()">Save Product</button>
+    </div>
+
+    <button onclick="deleteSelected()">Delete Selected</button>
+    <div id="product-list"></div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('products') || '[]');
+        const productListEl = document.getElementById('product-list');
+
+        function displayProducts() {
+            let html = '<table class="product-table"><tr><th>Select</th><th>Name</th><th>Description</th><th>Price</th><th>Edit</th></tr>';
+            products.forEach(product => {
+                html += `
+                    <tr class="product-item">
+                        <td><input type="checkbox" class="delete-checkbox" value="${product.id}"></td>
+                        <td>${product.name}</td>
+                        <td>${product.description}</td>
+                        <td>$${product.price}</td>
+                        <td><span class="edit-button" onclick="editProduct('${product.id}')">Edit</span></td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            productListEl.innerHTML = html;
+        }
+
+        function saveProduct() {
+            const id = document.getElementById('editing-id').value;
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const price = document.getElementById('price').value;
+
+            if (id) {
+                const index = products.findIndex(p => p.id === id);
+                products[index] = { id, name, description, price };
+            } else {
+                const newProduct = { id: Date.now().toString(), name, description, price };
+                products.push(newProduct);
+            }
+
+            localStorage.setItem('products', JSON.stringify(products));
+            clearForm();
+            displayProducts();
+        }
+
+        function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            document.getElementById('editing-id').value = product.id;
+            document.getElementById('name').value = product.name;
+            document.getElementById('description').value = product.description;
+            document.getElementById('price').value = product.price;
+        }
+
+        function deleteSelected() {
+            const selectedIds = Array.from(document.querySelectorAll('.delete-checkbox:checked')).map(cb => cb.value);
+            products = products.filter(product => !selectedIds.includes(product.id));
+            localStorage.setItem('products', JSON.stringify(products));
+            displayProducts();
+        }
+
+        function clearForm() {
+            document.getElementById('editing-id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('price').value = '';
+        }
+
+        displayProducts();
+    </script>
+</body>
+</html>
